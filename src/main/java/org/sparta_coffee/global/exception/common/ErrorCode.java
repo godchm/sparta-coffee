@@ -43,9 +43,12 @@ public enum ErrorCode {
     ORDER_CANNOT_CANCEL(HttpStatus.BAD_REQUEST, "ORDER_400_003", "취소할 수 없는 주문 상태입니다."),
     ORDER_CANNOT_UPDATE(HttpStatus.BAD_REQUEST, "ORDER_400_004", "결제 전 주문만 수정할 수 있습니다."),
 
-
     // Popular
-    POPULAR_MENU_NOT_FOUND(HttpStatus.NOT_FOUND, "POPULAR_404_001", "인기 메뉴 정보를 찾을 수 없습니다.");
+    POPULAR_MENU_NOT_FOUND(HttpStatus.NOT_FOUND, "POPULAR_404_001", "인기 메뉴 정보를 찾을 수 없습니다."),
+
+    // Lock
+    LOCK_ACQUIRE_FAILED(HttpStatus.CONFLICT, "LOCK_409_001", "현재 요청이 처리 중입니다. 잠시 후 다시 시도해주세요."),
+    LOCK_INTERRUPTED(HttpStatus.INTERNAL_SERVER_ERROR, "LOCK_500_001", "락 재시도 중 문제가 발생했습니다.");
 
     private final HttpStatus status;
     private final String code;

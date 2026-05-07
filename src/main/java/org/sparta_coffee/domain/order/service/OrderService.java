@@ -1,6 +1,7 @@
 package org.sparta_coffee.domain.order.service;
 
 import lombok.RequiredArgsConstructor;
+import org.sparta_coffee.common.config.annotation.RedisLock;
 import org.sparta_coffee.domain.menu.entity.Menu;
 import org.sparta_coffee.domain.menu.repository.MenuRepository;
 import org.sparta_coffee.domain.order.dto.request.OrderCreateRequest;
@@ -91,6 +92,8 @@ public class OrderService {
 
 
     // 결제 진행
+    // 분산락 적용.
+    @RedisLock(key = "lock:order", timeout = 60, retryCount = 3, retryDelayMillis = 100)
     @Transactional
     public OrderPayResponse payOrder(Long orderId, Long loginUserId, UserRole loginUserRole) {
         Order order = findOrder(orderId);
