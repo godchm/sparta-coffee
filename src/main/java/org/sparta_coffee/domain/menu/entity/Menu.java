@@ -42,5 +42,10 @@ public class Menu extends BaseEntity {
         this.price = price;
     }
 
+    // 소프트 딜리트
+    public void delete() {
+        this.active = false;
+    }
+
 
 }

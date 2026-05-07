@@ -34,8 +34,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
 
                         // 공개 조회 API
-                        .requestMatchers(HttpMethod.GET, "/api/v1/menus").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/popular-ranking/today").permitAll()
+
+                        // 메뉴 조회: 로그인한 USER, ADMIN만 가능
+                        .requestMatchers(HttpMethod.GET, "/api/v1/menus").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/menus/**").hasAnyRole("USER", "ADMIN")
 
                         // 인기검색어 이벤트 발행: 테스트 편하면 permitAll, 로그인 기반이면 authenticated
                         .requestMatchers(HttpMethod.POST, "/api/v1/popular-ranking").authenticated()

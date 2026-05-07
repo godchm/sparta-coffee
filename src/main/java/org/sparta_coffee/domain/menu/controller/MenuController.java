@@ -11,7 +11,6 @@ import org.sparta_coffee.domain.menu.dto.response.MenuResponse;
 import org.sparta_coffee.domain.menu.service.MenuService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -23,13 +22,31 @@ public class MenuController {
     private final MenuService menuService;
 
 
-    // 메뉴 조회
-    @GetMapping("/v1/menus")
-    public ResponseEntity<ApiResponseDto<List<MenuResponse>>> getMenus() {
+    // 메뉴 단건
+    // 메뉴 ID 선택 조회
+    // 예: GET /api/v1/menus/1
+   // 예: GET /api/v1/menus/1,2
+   // 예: GET /api/v1/menus/1,2,3
+    @GetMapping("/v1/menus/{menuIds}")
+    public ResponseEntity<ApiResponseDto<List<MenuResponse>>> getMenusByIds(
+            @PathVariable String menuIds
+    ) {
         return ResponseEntity.ok(
-                ApiResponseDto.success(HttpStatus.OK, menuService.getMenus())
+                ApiResponseDto.success(HttpStatus.OK, menuService.getMenusByIds(menuIds))
         );
     }
+
+
+    // 메뉴 모두 조회
+    @GetMapping("/v1/menus")
+    public ResponseEntity<ApiResponseDto<List<MenuResponse>>> getAllMenus() {
+        return ResponseEntity.ok(
+                ApiResponseDto.success(HttpStatus.OK, menuService.getAllMenus())
+        );
+    }
+
+
+
 
    // 메뉴 생성
     @PostMapping("/v1/menus")

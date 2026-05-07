@@ -100,7 +100,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
         return ("POST".equals(method) && "/api/v1/users".equals(path))
                 || ("POST".equals(method) && "/api/v1/auth/login".equals(path))
-                || ("GET".equals(method) && "/api/v1/menus".equals(path))
                 || ("GET".equals(method) && "/api/v1/popular-ranking/today".equals(path));
     }
 }
