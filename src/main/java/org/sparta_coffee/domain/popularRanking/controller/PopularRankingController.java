@@ -33,10 +33,20 @@ public class PopularRankingController {
                 .body(ApiResponseDto.success(HttpStatus.CREATED, null));
     }
 
+    // 인기 검색어 조회
     @GetMapping("/today")
     public ResponseEntity<ApiResponseDto<List<RankingDto>>> getTodayRanking() {
         return ResponseEntity.ok(
                 ApiResponseDto.success(HttpStatus.OK, popularRankingService.getTodayRanking())
+        );
+    }
+
+
+  // 최근 7일 인기 메뉴 검색어  TOP 3 조회
+    @GetMapping("/menus")
+    public ResponseEntity<ApiResponseDto<List<RankingDto>>> getPopularMenus() {
+        return ResponseEntity.ok(
+                ApiResponseDto.success(HttpStatus.OK, popularRankingService.getPopularMenus())
         );
     }
 }

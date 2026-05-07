@@ -2,10 +2,13 @@ package org.sparta_coffee.common.config.model.kafka.event;
 
 import java.time.LocalDateTime;
 
-
 public record PopularRankingEvent(
-        String keyword,
+        Long menuId,
+        String menuName,
+        long menuPrice,
         Long userId,
-        LocalDateTime searchedAt
+        long paymentAmount,
+        LocalDateTime orderedAt,
+        int quantity
 ) {
 }

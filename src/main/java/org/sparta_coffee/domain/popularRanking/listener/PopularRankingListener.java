@@ -24,13 +24,13 @@ public class PopularRankingListener {
             containerFactory = "popularRankingKafkaListenerContainerFactory"
     )
     public void consume(PopularRankingEvent event) {
-        String key = createDailyRankingKey(event.searchedAt().toLocalDate());
+        String key = createDailyRankingKey(event.orderedAt().toLocalDate());
 
         stringRedisTemplate.opsForZSet()
-                .incrementScore(key, event.keyword(), 1);
+                .incrementScore(key, String.valueOf(event.menuId()), event.quantity());
     }
 
     private String createDailyRankingKey(LocalDate date) {
-        return "popular:ranking:" + date;
+        return "popular:menu:" + date;
     }
 }

@@ -6,7 +6,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public class RankingDto {
 
-    private String keyword;
     private double score;
+    private String keyword;
     private long price;
+    private String rankingDateTime;
 }

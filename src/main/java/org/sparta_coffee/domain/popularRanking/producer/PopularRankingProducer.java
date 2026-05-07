@@ -18,7 +18,7 @@ public class PopularRankingProducer {
     public void send(PopularRankingEvent event) {
         popularRankingKafkaTemplate.send(
                 PopularRankingTopics.POPULAR_RANKING_EVENTS,
-                event.keyword(),
+                String.valueOf(event.menuId()),
                 event
         );
     }

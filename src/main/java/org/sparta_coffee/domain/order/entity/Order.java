@@ -27,10 +27,6 @@ public class Order extends BaseEntity {
     @Column(nullable = false)
     private Long userId;
 
-    // 주문한 메뉴
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "menu_id", nullable = false)
-    private Menu menu;
 
     @Column(nullable = false)
     private long paymentAmount;
@@ -45,18 +41,18 @@ public class Order extends BaseEntity {
 
 
     @Builder
-    public Order(Long userId, Menu menu, long paymentAmount, OrderStatus status, LocalDateTime orderedAt) {
+    public Order(Long userId, long paymentAmount, OrderStatus status, LocalDateTime orderedAt) {
         this.userId = userId;
-        this.menu = menu;
         this.paymentAmount = paymentAmount;
         this.status = status;
         this.orderedAt = orderedAt;
     }
 
-    public void updateMenu(Menu menu) {
-        this.menu = menu;
-        this.paymentAmount = menu.getPrice();
+
+    public void updatePaymentAmount(long paymentAmount) {
+        this.paymentAmount = paymentAmount;
     }
+
 
     // 주문 취소 상태로 변경.
     public void cancel() {

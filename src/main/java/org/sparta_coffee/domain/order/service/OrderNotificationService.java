@@ -20,10 +20,10 @@ public class OrderNotificationService {
                 .type("ORDER_PAID")
                 .orderId(order.getId())
                 .userId(order.getUserId())
-                .menuId(order.getMenu().getId())
-                .menuName(order.getMenu().getName())
+                .menuId(null)
+                .menuName("여러 메뉴")
                 .paymentAmount(order.getPaymentAmount())
-                .message(order.getUserId() + "번 고객이 " + order.getMenu().getName() + " 결제를 완료했습니다.")
+                .message(order.getUserId() + "번 고객이 주문 결제를 완료했습니다.")
                 .build();
 
         messagingTemplate.convertAndSend(ADMIN_ORDER_TOPIC, response);

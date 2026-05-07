@@ -66,7 +66,6 @@ class OrderDistributedLockTest {
 
         Order order = Order.builder()
                 .userId(userId)
-                .menu(menu)
                 .paymentAmount(menu.getPrice())
                 .status(OrderStatus.PENDING)
                 .orderedAt(LocalDateTime.now())
