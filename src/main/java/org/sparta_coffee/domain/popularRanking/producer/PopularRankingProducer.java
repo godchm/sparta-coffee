@@ -22,4 +22,12 @@ public class PopularRankingProducer {
                 event
         );
     }
+
+    public void sendSync(PopularRankingEvent event) throws Exception {
+        popularRankingKafkaTemplate.send(
+                PopularRankingTopics.POPULAR_RANKING_EVENTS,
+                String.valueOf(event.menuId()),
+                event
+        ).get();
+    }
 }

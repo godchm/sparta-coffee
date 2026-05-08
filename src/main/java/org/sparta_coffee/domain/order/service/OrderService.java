@@ -1,5 +1,7 @@
 package org.sparta_coffee.domain.order.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.sparta_coffee.common.config.annotation.RedisLock;
 import org.sparta_coffee.common.config.model.kafka.event.PopularRankingEvent;
@@ -16,7 +18,9 @@ import org.sparta_coffee.domain.order.entity.OrderStatus;
 import org.sparta_coffee.domain.order.repository.OrderItemRepository;
 import org.sparta_coffee.domain.order.repository.OrderRepository;
 import org.sparta_coffee.domain.point.service.PointService;
+import org.sparta_coffee.domain.popularRanking.entity.PendingPopularRankingEvent;
 import org.sparta_coffee.domain.popularRanking.producer.PopularRankingProducer;
+import org.sparta_coffee.domain.popularRanking.repository.PendingPopularRankingEventRepository;
 import org.sparta_coffee.domain.user.entity.User;
 import org.sparta_coffee.domain.user.enums.UserRole;
 import org.sparta_coffee.domain.user.repository.UserRepository;
@@ -39,6 +43,8 @@ public class OrderService {
     private final MenuRepository menuRepository;
     private final PointService pointService;
     private final PopularRankingProducer popularRankingProducer;
+    private final PendingPopularRankingEventRepository pendingPopularRankingEventRepository;
+    private final ObjectMapper objectMapper;
     private final OrderItemRepository orderItemRepository;
     private final UserRepository userRepository;
 
@@ -176,7 +182,7 @@ public class OrderService {
         order.pay();
 
         for (OrderItem item : items) {
-            popularRankingProducer.send(new PopularRankingEvent(
+            PopularRankingEvent event = new PopularRankingEvent(
                     item.getMenuId(),
                     item.getMenuName(),
                     item.getMenuPrice(),
@@ -184,7 +190,17 @@ public class OrderService {
                     item.getSubtotalAmount(),
                     LocalDateTime.now(),
                     item.getQuantity()
-            ));
+            );
+
+            try {
+                pendingPopularRankingEventRepository.save(
+                        PendingPopularRankingEvent.builder()
+                                .payload(objectMapper.writeValueAsString(event))
+                                .build()
+                );
+            } catch (JsonProcessingException e) {
+                throw new OrderException(ErrorCode.INTERNAL_SERVER_ERROR);
+            }
         }
 
         return OrderPayResponse.from(order, items, remainingPoint);

@@ -8,6 +8,8 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.sparta_coffee.common.config.annotation.RedisLock;
 import org.sparta_coffee.domain.order.service.RedisLockPayService;
+import org.sparta_coffee.global.exception.common.ErrorCode;
+import org.sparta_coffee.global.exception.domain.OrderException;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -71,7 +73,7 @@ public class RedisLockAspect {
                     Thread.sleep(redisLock.retryDelayMillis());
                 } catch (InterruptedException exception) {
                     Thread.currentThread().interrupt();
-                    throw new IllegalStateException("Redis 분산락 재시도 중 문제가 발생했습니다.");
+                    throw new OrderException(ErrorCode.LOCK_INTERRUPTED);
                 }
             }
         }
@@ -80,7 +82,7 @@ public class RedisLockAspect {
 
         if (!locked) {
             log.info("락획득 실패 : {}", Thread.currentThread().getName());
-            throw new IllegalStateException("현재 주문 결제가 처리 중입니다. 잠시 후 다시 시도해주세요.");
+            throw new OrderException(ErrorCode.LOCK_ACQUIRE_FAILED);
         }
 
         // locked가 true -> 락을 획득한 경우에 실행

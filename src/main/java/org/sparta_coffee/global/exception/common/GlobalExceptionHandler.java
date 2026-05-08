@@ -2,6 +2,8 @@ package org.sparta_coffee.global.exception.common;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
 import org.sparta_coffee.global.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -74,8 +76,24 @@ public class GlobalExceptionHandler {
     // 예상하지 못한 내부 오류이므로 클라이언트에는 공통 서버 에러 메시지만 내려줍니다.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse<Void>> handleException(Exception exception) {
+        Throwable cause = exception;
+
+        while (cause != null) {
+            if (cause instanceof ServiceException serviceException) {
+                ErrorCode errorCode = serviceException.getErrorCode();
+                return createErrorResponse(errorCode, serviceException.getMessage());
+            }
+
+            cause = cause.getCause();
+        }
+
+        log.error("Unhandled exception", exception);
         return createErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR);
     }
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<ErrorResponse<Void>> handleException(Exception exception) {
+//        return createErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR);
+//    }
 
     // data가 없는 실패 응답을 만들 때 사용하는 헬퍼입니다.
     private ResponseEntity<ErrorResponse<Void>> createErrorResponse(ErrorCode errorCode) {
