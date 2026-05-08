@@ -18,11 +18,16 @@ public class OrderItem extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long orderId;
 
-    @Column(nullable = false)
-    private Long menuId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "menu_id", nullable = false)
+    private Menu menu;
+
 
     @Column(nullable = false)
     private String menuName;
@@ -37,13 +42,21 @@ public class OrderItem extends BaseEntity {
     private long subtotalAmount;
 
     @Builder
-    public OrderItem(Long orderId, Menu menu, int quantity) {
-        this.orderId = orderId;
-        this.menuId = menu.getId();
+    public OrderItem(Order order, Menu menu, int quantity) {
+        this.order = order;
+        this.menu = menu;
         this.menuName = menu.getName();
         this.menuPrice = menu.getPrice();
         this.quantity = quantity;
         this.subtotalAmount = menu.getPrice() * quantity;
+    }
+
+    public Long getOrderId() {
+        return order.getId();
+    }
+
+    public Long getMenuId() {
+        return menu.getId();
     }
 
 }

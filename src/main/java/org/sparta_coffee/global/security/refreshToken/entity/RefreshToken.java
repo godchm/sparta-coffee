@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.sparta_coffee.domain.user.entity.User;
 import org.sparta_coffee.global.entity.BaseEntity;
 
 @Entity
@@ -17,15 +18,16 @@ public class RefreshToken extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
-    private String email;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private User user;
 
     @Column(nullable = false, length = 500)
     private String token;
 
     @Builder
-    public RefreshToken(String email, String token) {
-        this.email = email;
+    public RefreshToken(User user, String token) {
+        this.user = user;
         this.token = token;
     }
 

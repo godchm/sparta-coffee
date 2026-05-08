@@ -9,9 +9,12 @@ import org.sparta_coffee.domain.point.entity.PointHistoryType;
 import org.sparta_coffee.domain.point.entity.UserPoint;
 import org.sparta_coffee.domain.point.repository.PointHistoryRepository;
 import org.sparta_coffee.domain.point.repository.UserPointRepository;
+import org.sparta_coffee.domain.user.entity.User;
 import org.sparta_coffee.domain.user.enums.UserRole;
+import org.sparta_coffee.domain.user.repository.UserRepository;
 import org.sparta_coffee.global.exception.common.ErrorCode;
 import org.sparta_coffee.global.exception.domain.PointException;
+import org.sparta_coffee.global.exception.domain.UserException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -25,6 +28,7 @@ public class PointService {
 
     private final UserPointRepository userPointRepository;
     private final PointHistoryRepository pointHistoryRepository;
+    private final UserRepository userRepository;
 
 
     @Transactional
@@ -33,19 +37,22 @@ public class PointService {
             throw new PointException(ErrorCode.INVALID_CHARGE_AMOUNT);
         }
 
+        User user = findUser(loginUserId);
 
-        UserPoint userPoint = userPointRepository.findByUserId(loginUserId)
+        UserPoint userPoint = userPointRepository.findByUser_Id(loginUserId)
                 .orElseGet(() -> UserPoint.builder()
-                        .userId(loginUserId)
+                        .user(findUser(loginUserId))
                         .balance(0)
                         .build());
+
 
         userPoint.charge(request.amount());
 
         UserPoint savedUserPoint = userPointRepository.save(userPoint);
 
+
         PointHistory pointHistory = PointHistory.builder()
-                .userId(loginUserId)
+                .user(user)
                 .amount(request.amount())
                 .type(PointHistoryType.CHARGE)
                 .balanceAfter(savedUserPoint.getBalance())
@@ -54,7 +61,7 @@ public class PointService {
         pointHistoryRepository.save(pointHistory);
 
         return PointChargeResponse.builder()
-                .userId(savedUserPoint.getUserId())
+                .userId(savedUserPoint.getUser().getId())
                 .chargedAmount(request.amount())
                 .balance(savedUserPoint.getBalance())
                 .build();
@@ -64,7 +71,7 @@ public class PointService {
     public PointResponse getPoint(Long targetUserId, Long loginUserId, UserRole loginUserRole) {
         validateOwnerOrAdmin(targetUserId, loginUserId, loginUserRole);
 
-        UserPoint userPoint = userPointRepository.findByUserId(targetUserId)
+        UserPoint userPoint = userPointRepository.findByUser_Id(targetUserId)
                 .orElseThrow(() -> new PointException(ErrorCode.POINT_NOT_FOUND));
 
         return PointResponse.from(userPoint);
@@ -74,7 +81,7 @@ public class PointService {
     public void deletePoint(Long targetUserId, Long loginUserId, UserRole loginUserRole) {
         validateOwnerOrAdmin(targetUserId, loginUserId, loginUserRole);
 
-        UserPoint userPoint = userPointRepository.findByUserId(targetUserId)
+        UserPoint userPoint = userPointRepository.findByUser_Id(targetUserId)
                 .orElseThrow(() -> new PointException(ErrorCode.POINT_NOT_FOUND));
 
         userPointRepository.delete(userPoint);
@@ -102,7 +109,7 @@ public class PointService {
             throw new PointException(ErrorCode.INVALID_CHARGE_AMOUNT);
         }
 
-        UserPoint userPoint = userPointRepository.findByUserId(userId)
+        UserPoint userPoint = userPointRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new PointException(ErrorCode.INSUFFICIENT_POINT));
 
         if (userPoint.getBalance() < amount) {
@@ -111,8 +118,10 @@ public class PointService {
 
         userPoint.use(amount);
 
+        User user = findUser(userId);
+
         PointHistory pointHistory = PointHistory.builder()
-                .userId(userId)
+                .user(user)
                 .amount(amount)
                 .type(PointHistoryType.USE)
                 .balanceAfter(userPoint.getBalance())
@@ -141,13 +150,15 @@ public class PointService {
             throw new PointException(ErrorCode.INVALID_CHARGE_AMOUNT);
         }
 
-        UserPoint userPoint = userPointRepository.findByUserId(userId)
+        UserPoint userPoint = userPointRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new PointException(ErrorCode.POINT_NOT_FOUND));
 
         userPoint.refund(amount);
 
+        User user = findUser(userId);
+
         PointHistory pointHistory = PointHistory.builder()
-                .userId(userId)
+                .user(user)
                 .amount(amount)
                 .type(PointHistoryType.REFUND)
                 .balanceAfter(userPoint.getBalance())
@@ -157,4 +168,10 @@ public class PointService {
 
         return userPoint.getBalance();
     }
+
+// 유저 찾기
+private User findUser(Long userId) {
+    return userRepository.findById(userId)
+            .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+}
 }

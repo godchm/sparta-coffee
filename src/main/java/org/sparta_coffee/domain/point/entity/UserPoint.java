@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.sparta_coffee.domain.user.entity.User;
 import org.sparta_coffee.global.entity.BaseEntity;
 
 
@@ -24,23 +25,23 @@ public class UserPoint extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 사용자 식별값
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
 
     @Column(nullable = false)
     private long balance;
-
 
     // 낙관적 락 버전 필드
     // 같은 포인트 row를 동시에 수정하면 version 충돌로 감지됨
     @Version
     private Long version;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
 
     @Builder
-    public UserPoint(Long userId, long balance) {
-        this.userId = userId;
+    public UserPoint(User user, long balance) {
+        this.user = user;
         this.balance = balance;
     }
 

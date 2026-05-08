@@ -5,7 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.sparta_coffee.domain.menu.entity.Menu;
+import org.sparta_coffee.domain.user.entity.User;
 import org.sparta_coffee.global.entity.BaseEntity;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -23,9 +23,9 @@ public class Order extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 주문한 사용자 식별값
-    @Column(nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
 
     @Column(nullable = false)
@@ -41,13 +41,12 @@ public class Order extends BaseEntity {
 
 
     @Builder
-    public Order(Long userId, long paymentAmount, OrderStatus status, LocalDateTime orderedAt) {
-        this.userId = userId;
+    public Order(User user, long paymentAmount, OrderStatus status, LocalDateTime orderedAt) {
+        this.user = user;
         this.paymentAmount = paymentAmount;
         this.status = status;
         this.orderedAt = orderedAt;
     }
-
 
     public void updatePaymentAmount(long paymentAmount) {
         this.paymentAmount = paymentAmount;

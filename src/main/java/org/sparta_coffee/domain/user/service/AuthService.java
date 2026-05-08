@@ -35,7 +35,7 @@ public class AuthService {
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), user.getRole());
 
-        saveRefreshToken(user.getEmail(), refreshToken);
+        saveRefreshToken(user, refreshToken);
 
         return LoginResponse.builder()
                 .userId(user.getId())
@@ -51,17 +51,17 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
-        refreshTokenRepository.deleteByEmail(user.getEmail());
+        refreshTokenRepository.deleteByUser_Id(userId);
     }
 
-    private void saveRefreshToken(String email, String token) {
-        RefreshToken refreshToken = refreshTokenRepository.findByEmail(email)
+    private void saveRefreshToken(User user, String token) {
+        RefreshToken refreshToken = refreshTokenRepository.findByUser_Id(user.getId())
                 .map(savedToken -> {
                     savedToken.updateToken(token);
                     return savedToken;
                 })
                 .orElseGet(() -> RefreshToken.builder()
-                        .email(email)
+                        .user(user)
                         .token(token)
                         .build());
 

@@ -13,6 +13,6 @@ public interface UserPointRepository extends JpaRepository<UserPoint, Long> {
 
 
 
-    Optional<UserPoint> findByUserId(Long userId);
+    Optional<UserPoint> findByUser_Id(Long userId);
 
 }

@@ -4,8 +4,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.sparta_coffee.domain.point.entity.UserPoint;
 import org.sparta_coffee.domain.point.repository.UserPointRepository;
+import org.sparta_coffee.domain.user.entity.User;
+import org.sparta_coffee.domain.user.enums.UserRole;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.sparta_coffee.domain.user.repository.UserRepository;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -23,13 +26,12 @@ class PointOptimisticLockTest {
     @Autowired
     private UserPointRepository userPointRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Test
     @DisplayName("동시에 같은 사용자 포인트를 차감하면 낙관락으로 충돌을 감지하고 재시도한다")
     void usePointWithOptimisticLock() throws InterruptedException {
-        // given
-        // 테스트용 사용자 ID.
-        // 실제 User 엔티티를 만들지 않고 UserPoint의 userId 값만 사용한다.
-        Long userId = 100L;
 
         // 사용자의 최초 포인트.
         // 10000P에서 여러 스레드가 동시에 1000P씩 차감한다.
@@ -42,13 +44,25 @@ class PointOptimisticLockTest {
         // 즉, 같은 사용자 포인트를 10개 요청이 동시에 차감하려고 시도한다.
         int threadCount = 10;
 
-        // 기존 테스트 데이터가 있으면 결과에 영향을 줄 수 있으므로 초기화한다.
-        userPointRepository.deleteAll();
 
-        // 테스트용 포인트 row를 생성한다.
-        // 이 row 하나를 10개 스레드가 동시에 수정하게 된다.
+
+        // given
+        userPointRepository.deleteAll();
+        userRepository.deleteAll();
+
+        User user = userRepository.save(
+                User.builder()
+                        .name("테스트유저")
+                        .email("point-test@example.com")
+                        .password("password")
+                        .role(UserRole.USER)
+                        .build()
+        );
+
+        Long userId = user.getId();
+
         UserPoint userPoint = UserPoint.builder()
-                .userId(userId)
+                .user(user)
                 .balance(initialBalance)
                 .build();
 
@@ -113,7 +127,7 @@ class PointOptimisticLockTest {
 
         // then
         // 최종 포인트 상태를 DB에서 다시 조회한다.
-        UserPoint resultPoint = userPointRepository.findByUserId(userId)
+        UserPoint resultPoint = userPointRepository.findByUser_Id(userId)
                 .orElseThrow();
 
         // 최종 잔액은 "최초 포인트 - 성공한 차감 횟수 * 차감 금액"이어야 한다.

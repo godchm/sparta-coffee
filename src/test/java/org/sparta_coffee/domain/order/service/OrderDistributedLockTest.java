@@ -6,11 +6,15 @@ import org.sparta_coffee.domain.menu.entity.Menu;
 import org.sparta_coffee.domain.menu.repository.MenuRepository;
 import org.sparta_coffee.domain.order.dto.response.OrderPayResponse;
 import org.sparta_coffee.domain.order.entity.Order;
+import org.sparta_coffee.domain.order.entity.OrderItem;
 import org.sparta_coffee.domain.order.entity.OrderStatus;
+import org.sparta_coffee.domain.order.repository.OrderItemRepository;
 import org.sparta_coffee.domain.order.repository.OrderRepository;
 import org.sparta_coffee.domain.point.entity.UserPoint;
 import org.sparta_coffee.domain.point.repository.UserPointRepository;
+import org.sparta_coffee.domain.user.entity.User;
 import org.sparta_coffee.domain.user.enums.UserRole;
+import org.sparta_coffee.domain.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -36,6 +40,12 @@ class OrderDistributedLockTest {
     private OrderRepository orderRepository;
 
     @Autowired
+    private OrderItemRepository orderItemRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private MenuRepository menuRepository;
 
     @Autowired
@@ -47,8 +57,18 @@ class OrderDistributedLockTest {
     @Test
     @DisplayName("같은 주문에 동시에 결제를 요청하면 Redis 분산락으로 하나만 성공한다")
     void payOrderWithDistributedLock() throws InterruptedException {
-        // given
-        Long userId = 1L;
+
+        User user = userRepository.save(
+                User.builder()
+                        .name("락 테스트 유저")
+                        .email("order-lock-test@example.com")
+                        .password("password")
+                        .role(UserRole.USER)
+                        .build()
+        );
+
+        Long userId = user.getId();
+
 
         Menu menu = menuRepository.save(
                 Menu.builder()
@@ -58,20 +78,29 @@ class OrderDistributedLockTest {
         );
 
         UserPoint userPoint = UserPoint.builder()
-                .userId(userId)
+                .user(user)
                 .balance(10000)
                 .build();
+
 
         userPointRepository.save(userPoint);
 
         Order order = Order.builder()
-                .userId(userId)
+                .user(user)
                 .paymentAmount(menu.getPrice())
                 .status(OrderStatus.PENDING)
                 .orderedAt(LocalDateTime.now())
                 .build();
 
         Order savedOrder = orderRepository.save(order);
+
+        OrderItem orderItem = OrderItem.builder()
+                .order(savedOrder)
+                .menu(menu)
+                .quantity(1)
+                .build();
+
+        orderItemRepository.save(orderItem);
 
         int threadCount = 10;
 
@@ -119,7 +148,7 @@ class OrderDistributedLockTest {
 
         // then
         Order paidOrder = orderRepository.findById(savedOrder.getId()).orElseThrow();
-        UserPoint resultPoint = userPointRepository.findByUserId(userId).orElseThrow();
+        UserPoint resultPoint = userPointRepository.findByUser_Id(userId).orElseThrow();
 
         assertThat(successCount.get()).isEqualTo(1);
         assertThat(failCount.get()).isEqualTo(threadCount - 1);

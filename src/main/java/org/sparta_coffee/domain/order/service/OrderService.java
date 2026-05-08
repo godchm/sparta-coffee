@@ -17,10 +17,13 @@ import org.sparta_coffee.domain.order.repository.OrderItemRepository;
 import org.sparta_coffee.domain.order.repository.OrderRepository;
 import org.sparta_coffee.domain.point.service.PointService;
 import org.sparta_coffee.domain.popularRanking.producer.PopularRankingProducer;
+import org.sparta_coffee.domain.user.entity.User;
 import org.sparta_coffee.domain.user.enums.UserRole;
+import org.sparta_coffee.domain.user.repository.UserRepository;
 import org.sparta_coffee.global.exception.common.ErrorCode;
 import org.sparta_coffee.global.exception.domain.MenuException;
 import org.sparta_coffee.global.exception.domain.OrderException;
+import org.sparta_coffee.global.exception.domain.UserException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +40,7 @@ public class OrderService {
     private final PointService pointService;
     private final PopularRankingProducer popularRankingProducer;
     private final OrderItemRepository orderItemRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public OrderResponse createOrder(OrderCreateRequest request, Long loginUserId) {
@@ -52,8 +56,10 @@ public class OrderService {
             totalPaymentAmount += menus.get(i).getPrice() * itemRequests.get(i).quantity();
         }
 
+        User user = findUser(loginUserId);
+
         Order order = Order.builder()
-                .userId(loginUserId)
+                .user(user)
                 .paymentAmount(totalPaymentAmount)
                 .status(OrderStatus.PENDING)
                 .orderedAt(LocalDateTime.now())
@@ -67,7 +73,7 @@ public class OrderService {
             OrderItemRequest itemRequest = itemRequests.get(i);
 
             OrderItem orderItem = OrderItem.builder()
-                    .orderId(savedOrder.getId())
+                    .order(savedOrder)
                     .menu(menu)
                     .quantity(itemRequest.quantity())
                     .build();
@@ -86,7 +92,7 @@ public class OrderService {
         Order order = findOrder(orderId);
         validateOwnerOrAdmin(order, loginUserId, loginUserRole);
 
-        List<OrderItem> items = orderItemRepository.findAllByOrderId(orderId);
+        List<OrderItem> items = orderItemRepository.findAllByOrder_Id(orderId);
 
         return OrderResponse.from(order, items);
     }
@@ -110,7 +116,7 @@ public class OrderService {
             totalPaymentAmount += menus.get(i).getPrice() * itemRequests.get(i).quantity();
         }
 
-        orderItemRepository.deleteAllByOrderId(orderId);
+        orderItemRepository.deleteAllByOrder_Id(orderId);
 
         List<OrderItem> orderItems = new ArrayList<>();
         for (int i = 0; i < itemRequests.size(); i++) {
@@ -118,7 +124,7 @@ public class OrderService {
             OrderItemRequest itemRequest = itemRequests.get(i);
 
             OrderItem orderItem = OrderItem.builder()
-                    .orderId(orderId)
+                    .order(order)
                     .menu(menu)
                     .quantity(itemRequest.quantity())
                     .build();
@@ -146,7 +152,7 @@ public class OrderService {
         }
 
         if (order.getStatus() == OrderStatus.PAID) {
-            pointService.refund(order.getUserId(), order.getPaymentAmount());
+            pointService.refund(order.getUser().getId(), order.getPaymentAmount());
         }
 
         order.cancel();
@@ -163,9 +169,9 @@ public class OrderService {
         validateOwnerOrAdmin(order, loginUserId, loginUserRole);
         validatePending(order);
 
-        List<OrderItem> items = orderItemRepository.findAllByOrderId(orderId);
+        List<OrderItem> items = orderItemRepository.findAllByOrder_Id(orderId);
 
-        long remainingPoint = pointService.use(order.getUserId(), order.getPaymentAmount());
+        long remainingPoint = pointService.use(order.getUser().getId(), order.getPaymentAmount());
 
         order.pay();
 
@@ -174,7 +180,7 @@ public class OrderService {
                     item.getMenuId(),
                     item.getMenuName(),
                     item.getMenuPrice(),
-                    order.getUserId(),
+                    order.getUser().getId(),
                     item.getSubtotalAmount(),
                     LocalDateTime.now(),
                     item.getQuantity()
@@ -196,7 +202,7 @@ public class OrderService {
             return;
         }
 
-        if (!order.getUserId().equals(loginUserId)) {
+        if (!order.getUser().getId().equals(loginUserId)) {
             throw new OrderException(ErrorCode.ACCESS_DENIED);
         }
     }
@@ -205,5 +211,11 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new OrderException(ErrorCode.ORDER_CANNOT_UPDATE);
         }
+    }
+
+
+    private User findUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
     }
 }

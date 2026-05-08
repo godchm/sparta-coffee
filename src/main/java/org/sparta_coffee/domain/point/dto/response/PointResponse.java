@@ -11,7 +11,7 @@ public record PointResponse(
 
     public static PointResponse from(UserPoint userPoint) {
         return PointResponse.builder()
-                .userId(userPoint.getUserId())
+                .userId(userPoint.getUser().getId())
                 .balance(userPoint.getBalance())
                 .build();
     }

@@ -18,7 +18,7 @@ public record OrderResponse(
     public static OrderResponse from(Order order, List<OrderItem> items) {
         return OrderResponse.builder()
                 .orderId(order.getId())
-                .userId(order.getUserId())
+                .userId(order.getUser().getId())
                 .paymentAmount(order.getPaymentAmount())
                 .status(order.getStatus().name())
                 .items(items.stream()
