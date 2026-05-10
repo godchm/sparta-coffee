@@ -34,6 +34,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/reissue").permitAll()
 
+
                         // 공개 조회 API
                         .requestMatchers(HttpMethod.GET, "/api/v1/popular-ranking/today").permitAll()
 

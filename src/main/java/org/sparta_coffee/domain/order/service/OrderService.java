@@ -31,6 +31,7 @@ import org.sparta_coffee.global.exception.domain.UserException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +43,6 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final MenuRepository menuRepository;
     private final PointService pointService;
-    private final PopularRankingProducer popularRankingProducer;
     private final PendingPopularRankingEventRepository pendingPopularRankingEventRepository;
     private final ObjectMapper objectMapper;
     private final OrderItemRepository orderItemRepository;
