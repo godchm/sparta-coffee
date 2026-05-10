@@ -94,4 +94,10 @@ public class JwtTokenProvider {
     public void validateTokenOrThrow(String token) {
         parseClaims(token);
     }
+
+    // 리프레쉬 토큰을 위한 메서드 추가.
+    public Long getUserId(String token) {
+        Claims claims = parseClaims(token);
+        return Long.valueOf(claims.getSubject());
+    }
 }

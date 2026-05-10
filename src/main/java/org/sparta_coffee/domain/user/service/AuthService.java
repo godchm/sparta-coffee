@@ -3,6 +3,9 @@ package org.sparta_coffee.domain.user.service;
 import lombok.RequiredArgsConstructor;
 import org.sparta_coffee.domain.user.dto.request.LoginRequest;
 import org.sparta_coffee.domain.user.dto.response.LoginResponse;
+import org.sparta_coffee.domain.user.dto.response.LoginResult;
+import org.sparta_coffee.domain.user.dto.response.TokenReissueResponse;
+import org.sparta_coffee.domain.user.dto.response.TokenReissueResult;
 import org.sparta_coffee.domain.user.entity.User;
 import org.sparta_coffee.domain.user.repository.UserRepository;
 import org.sparta_coffee.global.exception.common.ErrorCode;
@@ -24,7 +27,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional
-    public LoginResponse login(LoginRequest request) {
+    public LoginResult login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
@@ -37,12 +40,51 @@ public class AuthService {
 
         saveRefreshToken(user, refreshToken);
 
-        return LoginResponse.builder()
+        LoginResponse loginResponse = LoginResponse.builder()
                 .userId(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
                 .role(user.getRole())
                 .accessToken(accessToken)
+                .build();
+
+        return LoginResult.builder()
+                .loginResponse(loginResponse)
+                .refreshToken(refreshToken)
+                .build();
+    }
+
+
+    @Transactional
+    public TokenReissueResult reissue(String requestRefreshToken) {
+        if (!jwtTokenProvider.validateToken(requestRefreshToken)) {
+            throw new UserException(ErrorCode.INVALID_TOKEN);
+        }
+
+        Long userId = jwtTokenProvider.getUserId(requestRefreshToken);
+
+        RefreshToken savedRefreshToken = refreshTokenRepository.findByUser_Id(userId)
+                .orElseThrow(() -> new UserException(ErrorCode.INVALID_TOKEN));
+
+        if (!savedRefreshToken.getToken().equals(requestRefreshToken)) {
+            throw new UserException(ErrorCode.INVALID_TOKEN);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(user.getId(), user.getRole());
+
+        savedRefreshToken.updateToken(newRefreshToken);
+
+        TokenReissueResponse tokenReissueResponse = TokenReissueResponse.builder()
+                .accessToken(newAccessToken)
+                .build();
+
+        return TokenReissueResult.builder()
+                .tokenReissueResponse(tokenReissueResponse)
+                .refreshToken(newRefreshToken)
                 .build();
     }
 
@@ -51,7 +93,7 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
-        refreshTokenRepository.deleteByUser_Id(userId);
+        refreshTokenRepository.deleteByUser_Id(user.getId());
     }
 
     private void saveRefreshToken(User user, String token) {
