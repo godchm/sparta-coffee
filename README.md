@@ -37,7 +37,7 @@
 
 
 ## 2. ERD
-![erd.png](../erd.png)
+![erd.png](erd.png)
 
 
 ### 주요 테이블
